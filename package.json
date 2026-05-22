@@ -1,0 +1,20 @@
+{
+  "name": "image-filter",
+  "version": "1.0.0",
+  "description": "Apply CSS-spec hue-rotate/saturate/brightness filters to images",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^14.0.3",
+    "glob": "^13.0.6",
+    "sharp": "^0.34.5"
+  },
+  "bin": {
+    "image-filter": "./index.js"
+  }
+}
