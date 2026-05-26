@@ -81,7 +81,7 @@ $ image-filter photo.png -F 'invert(39%) sepia(74%) saturate(1142%) hue-rotate(3
 $ image-filter photo.jpg -H 90 -S 1.5 -B 0.8
 ```
 
-高饱和 + 色相 + 亮度（单独参数，固定为 saturate → hue-rotate → brightness）：
+高饱和 + 色相 + 亮度
 
 ```bash
 $ image-filter photo.png -S 1142% -H 346 -B 92%

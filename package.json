@@ -4,7 +4,8 @@
   "description": "Apply CSS-spec hue-rotate/saturate/brightness filters to images",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node index.js",
+    "test": "node test.js"
   },
   "keywords": [],
   "author": "",
