@@ -4,7 +4,7 @@
  * expected values for known pixel inputs.
  */
 
-const { buildCombinedMatrix, applyMatrixToPixels } = require('./matrix');
+const { buildCombinedMatrix, applyMatrixToPixels, parseFilterString } = require('./matrix');
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
@@ -72,6 +72,32 @@ function assert(label, got, expected) {
   const orig = [...buf];
   applyMatrixToPixels(buf, m);
   assert('hue-rotate(360) is identity', [...buf], orig);
+}
+
+// --- Unit: full CSS filter string (order: invert → sepia → saturate → hue-rotate → brightness → contrast) ---
+{
+  const css =
+    'invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)';
+  const { steps } = parseFilterString(css);
+  assert('parseFilterString preserves 6 steps', [steps.length], [6]);
+
+  const m = buildCombinedMatrix({ steps });
+  const buf = Buffer.from([180, 90, 40, 255]);
+  applyMatrixToPixels(buf, m);
+
+  const mWrongOrder = buildCombinedMatrix({
+    steps: [...steps].reverse(),
+  });
+  const buf2 = Buffer.from([180, 90, 40, 255]);
+  applyMatrixToPixels(buf2, mWrongOrder);
+  const orderMatters = buf.some((v, i) => !approx(v, buf2[i], 0));
+  if (orderMatters) {
+    console.log('  ✔  filter order changes result (order matters)');
+    passed++;
+  } else {
+    console.error('  ✖  filter order should change result');
+    failed++;
+  }
 }
 
 // --- Integration: file round-trip ---

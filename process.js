@@ -8,7 +8,7 @@ const { buildCombinedMatrix, applyMatrixToPixels } = require('./matrix');
  *
  * @param {string} inputPath  - Source image path
  * @param {string} outputPath - Destination image path (may equal inputPath for in-place)
- * @param {object} filters    - { hueRotate, saturate, brightness }
+ * @param {object|string} filters - CSS filter string, { steps }, or { invert, sepia, saturate, hueRotate, brightness, contrast }
  */
 async function processImage(inputPath, outputPath, filters) {
   const matrix = buildCombinedMatrix(filters);

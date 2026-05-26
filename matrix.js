@@ -100,14 +100,143 @@ function brightnessMatrix(amount) {
 }
 
 /**
- * Build a combined matrix from filter options.
- * Filters are applied left-to-right (matching CSS filter application order).
+ * invert(amount) — amount 0..1 (0%..100%)
  */
-function buildCombinedMatrix({ hueRotate = 0, saturate = 1, brightness = 1 } = {}) {
+function invertMatrix(amount) {
+  const a = amount;
+  const t = 1 - 2 * a;
+  return [
+    t, 0, 0, 0, a,
+    0, t, 0, 0, a,
+    0, 0, t, 0, a,
+    0, 0, 0, 1, 0,
+  ];
+}
+
+/**
+ * sepia(amount) — amount 0..1 (0%..100%)
+ */
+function sepiaMatrix(amount) {
+  const a = amount;
+  const inv = 1 - a;
+  return [
+    inv + 0.393 * a, inv * 0 + 0.769 * a, inv * 0 + 0.189 * a, 0, 0,
+    0.349 * a,       inv + 0.686 * a,       0.168 * a,             0, 0,
+    0.272 * a,       0.534 * a,             inv + 0.131 * a,       0, 0,
+    0,               0,                     0,                     1, 0,
+  ];
+}
+
+/**
+ * contrast(amount) — amount=1 → no change; pivots around 0.5 in [0,1] space
+ */
+function contrastMatrix(amount) {
+  const c = amount;
+  const bias = -0.5 * c + 0.5;
+  return [
+    c, 0, 0, 0, bias,
+    0, c, 0, 0, bias,
+    0, 0, c, 0, bias,
+    0, 0, 0, 1, 0,
+  ];
+}
+
+/** CSS filter defaults (identity = no effect). */
+const FILTER_DEFAULTS = {
+  invert: 0,
+  sepia: 0,
+  saturate: 1,
+  hueRotate: 0,
+  brightness: 1,
+  contrast: 1,
+};
+
+const FILTER_RE = /(invert|sepia|saturate|hue-rotate|brightness|contrast)\(([^)]+)\)/gi;
+
+/**
+ * Parse a CSS filter value (percent, deg, or number).
+ * @param {'invert'|'sepia'|'saturate'|'hue-rotate'|'brightness'|'contrast'} name
+ */
+function parseFilterAmount(name, raw) {
+  const s = String(raw).trim().toLowerCase();
+  if (name === 'hue-rotate') {
+    const n = parseFloat(s.replace(/deg$/, ''));
+    if (Number.isNaN(n)) throw new Error(`invalid hue-rotate: ${raw}`);
+    return n;
+  }
+  if (s.endsWith('%')) {
+    const n = parseFloat(s.slice(0, -1));
+    if (Number.isNaN(n)) throw new Error(`invalid ${name}: ${raw}`);
+    if (name === 'invert' || name === 'sepia') return n / 100;
+    return n / 100;
+  }
+  const n = parseFloat(s);
+  if (Number.isNaN(n)) throw new Error(`invalid ${name}: ${raw}`);
+  return n;
+}
+
+/**
+ * Parse a full CSS filter string, preserving declaration order.
+ * @returns {{ values: object, steps: { name: string, amount: number }[] }}
+ */
+function parseFilterString(filterStr) {
+  const values = { ...FILTER_DEFAULTS };
+  const steps = [];
+  let match;
+  const re = new RegExp(FILTER_RE.source, 'gi');
+  while ((match = re.exec(filterStr)) !== null) {
+    const name = match[1].toLowerCase();
+    const amount = parseFilterAmount(name, match[2]);
+    const key = name === 'hue-rotate' ? 'hueRotate' : name;
+    values[key] = amount;
+    steps.push({ name, amount });
+  }
+  return { values, steps };
+}
+
+function matrixForStep(name, amount) {
+  switch (name) {
+    case 'invert': return invertMatrix(amount);
+    case 'sepia': return sepiaMatrix(amount);
+    case 'saturate': return saturateMatrix(amount);
+    case 'hue-rotate': return hueRotateMatrix(amount);
+    case 'brightness': return brightnessMatrix(amount);
+    case 'contrast': return contrastMatrix(amount);
+    default: throw new Error(`unsupported filter: ${name}`);
+  }
+}
+
+/**
+ * Build a combined matrix from filter options or a CSS filter string.
+ *
+ * Order matters: matches CSS `filter` — left-to-right in the string, or `steps` array.
+ * Object form without `steps` uses declaration order:
+ *   invert → sepia → saturate → hue-rotate → brightness → contrast
+ * (only non-default values are applied).
+ */
+function buildCombinedMatrix(input = {}) {
+  if (typeof input === 'string') {
+    return buildCombinedMatrix(parseFilterString(input));
+  }
+
+  let steps = input.steps;
+  if (!steps) {
+    steps = [];
+    const add = (name, amount, def) => {
+      if (amount !== def) steps.push({ name, amount });
+    };
+    add('invert', input.invert ?? FILTER_DEFAULTS.invert, FILTER_DEFAULTS.invert);
+    add('sepia', input.sepia ?? FILTER_DEFAULTS.sepia, FILTER_DEFAULTS.sepia);
+    add('saturate', input.saturate ?? FILTER_DEFAULTS.saturate, FILTER_DEFAULTS.saturate);
+    add('hue-rotate', input.hueRotate ?? FILTER_DEFAULTS.hueRotate, FILTER_DEFAULTS.hueRotate);
+    add('brightness', input.brightness ?? FILTER_DEFAULTS.brightness, FILTER_DEFAULTS.brightness);
+    add('contrast', input.contrast ?? FILTER_DEFAULTS.contrast, FILTER_DEFAULTS.contrast);
+  }
+
   let m = identity();
-  if (brightness !== 1) m = multiplyMatrices(brightnessMatrix(brightness), m);
-  if (saturate !== 1)   m = multiplyMatrices(saturateMatrix(saturate), m);
-  if (hueRotate !== 0)  m = multiplyMatrices(hueRotateMatrix(hueRotate), m);
+  for (const { name, amount } of steps) {
+    m = multiplyMatrices(matrixForStep(name, amount), m);
+  }
   return m;
 }
 
@@ -136,4 +265,9 @@ function applyMatrixToPixels(buffer, matrix) {
   return buffer;
 }
 
-module.exports = { buildCombinedMatrix, applyMatrixToPixels };
+module.exports = {
+  FILTER_DEFAULTS,
+  buildCombinedMatrix,
+  parseFilterString,
+  applyMatrixToPixels,
+};
