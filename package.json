@@ -8,9 +8,9 @@
   },
   "scripts": {
     "dev": "node index.js",
-    "test": "node test.js",
+    "test": "node tests/test.js",
     "prepublishOnly": "npm test",
-    "image-test": "node compare-playwright.js"
+    "compare": "node tests/compare-playwright.js"
   },
   "keywords": [
     "image",
@@ -41,7 +41,8 @@
     "process.js",
     "matrix.js",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md"
   ],
   "engines": {
     "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
