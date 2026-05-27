@@ -7,7 +7,7 @@ const { glob } = require('glob');
 const path = require('path');
 const fs = require('fs');
 const { processImage, resolveOutputPath, isExplicitOutputFile, looksLikeOutputFile } = require('./process');
-const { parseFilterString, FILTER_DEFAULTS } = require('./matrix');
+const { parseFilterString } = require('./matrix');
 
 const SUPPORTED_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.tiff', '.tif', '.avif']);
 
@@ -78,36 +78,16 @@ function displayPath(filePath) {
   return filePath;
 }
 
-/** Parse saturate/brightness: number multiplier or CSS-style percentage (50% → 0.5). */
-function parseAmount(value) {
-  const s = String(value).trim();
-  if (s.endsWith('%')) {
-    const n = parseFloat(s.slice(0, -1));
-    if (Number.isNaN(n)) throw new Error(`invalid amount: ${value}`);
-    return n / 100;
-  }
-  const n = parseFloat(s);
-  if (Number.isNaN(n)) throw new Error(`invalid amount: ${value}`);
-  return n;
-}
-
 program
   .name('image-filter')
   .description('Apply CSS filter() effects to images (invert, sepia, saturate, hue-rotate, brightness, contrast)')
   .argument('<input...>', 'Image file(s), director(ies), or glob patterns')
-  .option(
+  .requiredOption(
     '-F, --filter <css>',
     'Full CSS filter string, e.g. invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)',
   )
-  .option('--invert <amount>', 'Invert 0–1 or % (default: 0)', parseAmount, FILTER_DEFAULTS.invert)
-  .option('--sepia <amount>', 'Sepia 0–1 or % (default: 0)', parseAmount, FILTER_DEFAULTS.sepia)
-  .option('-H, --hue-rotate <degrees>', 'Hue rotation in degrees (default: 0)', parseFloat, FILTER_DEFAULTS.hueRotate)
-  .option('-S, --saturate <amount>', 'Saturation multiplier or % (default: 1)', parseAmount, FILTER_DEFAULTS.saturate)
-  .option('-B, --brightness <amount>', 'Brightness multiplier or % (default: 1)', parseAmount, FILTER_DEFAULTS.brightness)
-  .option('--contrast <amount>', 'Contrast multiplier or % (default: 1)', parseAmount, FILTER_DEFAULTS.contrast)
   .option('-o, --output-dir <path>', 'Output directory (structure preserved), or output file for a single input')
   .option('-s, --suffix <string>', 'Append suffix before extension, e.g. "_filtered"')
-  .option('--fast', 'Fast mode: combine all filters into a single matrix (legacy; less browser-accurate)')
   .option('--dry-run', 'Print what would be done without processing')
   .action(async (inputs, opts) => {
     const entries = await collectInputs(inputs);
@@ -122,46 +102,17 @@ program
       process.exit(1);
     }
 
-    let filters;
-    if (opts.filter) {
-      const parsed = parseFilterString(opts.filter);
-      filters = { steps: parsed.steps };
-    } else {
-      filters = {
-        invert: opts.invert,
-        sepia: opts.sepia,
-        hueRotate: opts.hueRotate,
-        saturate: opts.saturate,
-        brightness: opts.brightness,
-        contrast: opts.contrast,
-      };
-    }
+    const parsed = parseFilterString(opts.filter);
+    const filters = { steps: parsed.steps };
 
     console.log(`\nimage-filter  ·  ${entries.length} file(s)`);
-    if (opts.filter) {
-      console.log(`  filter     : ${opts.filter}`);
-    } else {
-      if (filters.invert !== FILTER_DEFAULTS.invert) console.log(`  invert     : ${filters.invert}`);
-      if (filters.sepia !== FILTER_DEFAULTS.sepia) console.log(`  sepia      : ${filters.sepia}`);
-      if (filters.hueRotate !== FILTER_DEFAULTS.hueRotate) console.log(`  hue-rotate : ${filters.hueRotate}°`);
-      if (filters.saturate !== FILTER_DEFAULTS.saturate) console.log(`  saturate   : ${filters.saturate}`);
-      if (filters.brightness !== FILTER_DEFAULTS.brightness) console.log(`  brightness : ${filters.brightness}`);
-      if (filters.contrast !== FILTER_DEFAULTS.contrast) console.log(`  contrast   : ${filters.contrast}`);
-      const allDefault =
-        filters.invert === FILTER_DEFAULTS.invert &&
-        filters.sepia === FILTER_DEFAULTS.sepia &&
-        filters.hueRotate === FILTER_DEFAULTS.hueRotate &&
-        filters.saturate === FILTER_DEFAULTS.saturate &&
-        filters.brightness === FILTER_DEFAULTS.brightness &&
-        filters.contrast === FILTER_DEFAULTS.contrast;
-      if (allDefault) console.log('  (no filters — identity)');
-    }
+    console.log(`  filter     : ${opts.filter}`);
     if (opts.outputDir) {
       const label = isExplicitOutputFile(opts.outputDir, entries.length) ? 'output' : 'output-dir';
       console.log(`  ${label.padEnd(11)}: ${opts.outputDir}`);
     }
     if (opts.suffix) console.log(`  suffix     : ${opts.suffix}`);
-    console.log(`  mode       : ${opts.fast ? 'fast (combined matrix)' : 'browser (stepwise + premultiplied + sRGB)'}`);
+    console.log('  mode       : browser (stepwise + premultiplied + sRGB)');
     console.log('');
 
     let ok = 0;
@@ -185,7 +136,7 @@ program
       }
 
       try {
-        await processImage(file, outPath, filters, { mode: opts.fast ? 'fast' : 'browser' });
+        await processImage(file, outPath, filters);
         const arrow = file === outPath ? '(overwritten)' : `→  ${displayPath(outPath)}`;
         console.log(`${progress} [OK]  ${displayPath(file)}  ${arrow}`);
         ok++;

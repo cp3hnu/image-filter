@@ -3,7 +3,7 @@
 
 /**
  * Ground-truth comparison: render CSS filter in a real Chromium via Playwright,
- * then compare against image-filter's browser-mode and fast-mode outputs.
+ * then compare against image-filter output.
  *
  * Usage:
  *   node compare-playwright.js <image-path> "<filter-string>"
@@ -128,27 +128,18 @@ async function main() {
 
   const pwOut = path.join(inputDir, `compare-pw-${stem}.png`);
   const ifBrowserOut = path.join(inputDir, `compare-if-browser-${stem}.png`);
-  const ifFastOut = path.join(inputDir, `compare-if-fast-${stem}.png`);
 
   console.log('1) Playwright 浏览器渲染中…');
   await renderInBrowser(FILTER, pwOut);
   console.log(`   → ${path.basename(pwOut)}  sha=${sha16(pwOut)}\n`);
 
-  console.log('2) image-filter (browser 模式)…');
-  await processImage(INPUT, ifBrowserOut, FILTER, { mode: 'browser' });
+  console.log('2) image-filter 输出…');
+  await processImage(INPUT, ifBrowserOut, FILTER);
   console.log(`   → ${path.basename(ifBrowserOut)}  sha=${sha16(ifBrowserOut)}\n`);
 
-  console.log('3) image-filter (fast 模式)…');
-  await processImage(INPUT, ifFastOut, FILTER, { mode: 'fast' });
-  console.log(`   → ${path.basename(ifFastOut)}  sha=${sha16(ifFastOut)}\n`);
-
   console.log('=== 与 Playwright 浏览器的对比 ===\n');
-  console.log('-- browser 模式 (步进+预乘+sRGB) --');
+  console.log('-- image-filter vs browser --');
   console.log(' ', await stats(pwOut, ifBrowserOut));
-  console.log('\n-- fast 模式 (合并矩阵)            --');
-  console.log(' ', await stats(pwOut, ifFastOut));
-  console.log('\n-- browser vs fast                  --');
-  console.log(' ', await stats(ifBrowserOut, ifFastOut));
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

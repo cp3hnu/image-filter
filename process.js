@@ -1,11 +1,7 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
-const {
-  buildCombinedMatrix,
-  applyMatrixToPixels,
-  applyFiltersStepwise,
-} = require('./matrix');
+const { applyFiltersStepwise } = require('./matrix');
 
 /**
  * Process a single image file with the given filter options.
@@ -13,14 +9,8 @@ const {
  * @param {string} inputPath  - Source image path
  * @param {string} outputPath - Destination image path (may equal inputPath for in-place)
  * @param {object|string} filters - CSS filter string, { steps }, or { invert, sepia, saturate, hueRotate, brightness, contrast }
- * @param {object} [options]
- * @param {'browser'|'fast'} [options.mode='browser']
- *        'browser' — stepwise + premultiplied alpha + sRGB pipeline (W3C-compliant, closer to Chrome).
- *        'fast'    — single combined 5x4 matrix on non-premultiplied sRGB (legacy, ~Nx faster).
  */
-async function processImage(inputPath, outputPath, filters, options = {}) {
-  const mode = options.mode === 'fast' ? 'fast' : 'browser';
-
+async function processImage(inputPath, outputPath, filters) {
   const image = sharp(inputPath, { failOn: 'none' });
   const metadata = await image.metadata();
   const format = metadata.format;
@@ -35,12 +25,7 @@ async function processImage(inputPath, outputPath, filters, options = {}) {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  if (mode === 'fast') {
-    const matrix = buildCombinedMatrix(filters);
-    applyMatrixToPixels(data, matrix);
-  } else {
-    applyFiltersStepwise(data, filters);
-  }
+  applyFiltersStepwise(data, filters);
 
   // Re-encode in the same format, declare sRGB and drop any source ICC profile
   // (we already converted pixels into sRGB, so a stale profile would lie).

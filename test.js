@@ -136,36 +136,8 @@ function assert(label, got, expected) {
   assert('stepwise: alpha=0 stays alpha=0', [buf[3]], [0]);
 }
 
-// --- Integration: file round-trip (fast mode == combined matrix) ---
-async function testFileRoundtripFast() {
-  const tmpIn = path.join(__dirname, '_test_in.png');
-  const tmpOut = path.join(__dirname, '_test_out.png');
-
-  await sharp({
-    create: { width: 2, height: 2, channels: 4, background: { r: 200, g: 100, b: 50, alpha: 1 } },
-  }).png().toFile(tmpIn);
-
-  const { processImage } = require('./process');
-  await processImage(tmpIn, tmpOut, { hueRotate: 135, saturate: 1.32, brightness: 0.96 }, { mode: 'fast' });
-
-  const { data } = await sharp(tmpOut).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-
-  const m = buildCombinedMatrix({ hueRotate: 135, saturate: 1.32, brightness: 0.96 });
-  const ref = Buffer.from([200, 100, 50, 255]);
-  applyMatrixToPixels(ref, m);
-
-  assert(
-    'fast-mode round-trip: hue-rotate(135) saturate(1.32) brightness(0.96)',
-    [data[0], data[1], data[2], data[3]],
-    [ref[0], ref[1], ref[2], ref[3]],
-  );
-
-  fs.unlinkSync(tmpIn);
-  fs.unlinkSync(tmpOut);
-}
-
-// --- Integration: file round-trip (browser/stepwise mode) ---
-async function testFileRoundtripBrowser() {
+// --- Integration: file round-trip (default stepwise mode) ---
+async function testFileRoundtrip() {
   const tmpIn = path.join(__dirname, '_test_in_b.png');
   const tmpOut = path.join(__dirname, '_test_out_b.png');
 
@@ -182,18 +154,13 @@ async function testFileRoundtripBrowser() {
   applyFiltersStepwise(ref, { hueRotate: 135, saturate: 1.32, brightness: 0.96 });
 
   assert(
-    'browser-mode round-trip: hue-rotate(135) saturate(1.32) brightness(0.96)',
+    'default-mode round-trip: hue-rotate(135) saturate(1.32) brightness(0.96)',
     [data[0], data[1], data[2], data[3]],
     [ref[0], ref[1], ref[2], ref[3]],
   );
 
   fs.unlinkSync(tmpIn);
   fs.unlinkSync(tmpOut);
-}
-
-async function testFileRoundtrip() {
-  await testFileRoundtripFast();
-  await testFileRoundtripBrowser();
 }
 
 testFileRoundtrip()
