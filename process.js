@@ -1,7 +1,11 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
-const { buildCombinedMatrix, applyMatrixToPixels } = require('./matrix');
+const {
+  buildCombinedMatrix,
+  applyMatrixToPixels,
+  applyFiltersStepwise,
+} = require('./matrix');
 
 /**
  * Process a single image file with the given filter options.
@@ -9,32 +13,42 @@ const { buildCombinedMatrix, applyMatrixToPixels } = require('./matrix');
  * @param {string} inputPath  - Source image path
  * @param {string} outputPath - Destination image path (may equal inputPath for in-place)
  * @param {object|string} filters - CSS filter string, { steps }, or { invert, sepia, saturate, hueRotate, brightness, contrast }
+ * @param {object} [options]
+ * @param {'browser'|'fast'} [options.mode='browser']
+ *        'browser' — stepwise + premultiplied alpha + sRGB pipeline (W3C-compliant, closer to Chrome).
+ *        'fast'    — single combined 5x4 matrix on non-premultiplied sRGB (legacy, ~Nx faster).
  */
-async function processImage(inputPath, outputPath, filters) {
-  const matrix = buildCombinedMatrix(filters);
+async function processImage(inputPath, outputPath, filters, options = {}) {
+  const mode = options.mode === 'fast' ? 'fast' : 'browser';
 
-  // Read image as raw RGBA pixels
-  const image = sharp(inputPath);
+  const image = sharp(inputPath, { failOn: 'none' });
   const metadata = await image.metadata();
+  const format = metadata.format;
 
+  // 1) Normalize the working color space to sRGB.
+  //    Honors the input ICC profile (if any) and converts pixels into sRGB
+  //    so our matrix math matches CSS `filter` (spec: sRGB).
+  // 2) ensureAlpha → 4 channels for the matrix.
   const { data, info } = await image
-    .ensureAlpha()          // guarantee 4 channels
+    .pipelineColourspace('srgb')
+    .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // Apply the color matrix in-place
-  applyMatrixToPixels(data, matrix);
+  if (mode === 'fast') {
+    const matrix = buildCombinedMatrix(filters);
+    applyMatrixToPixels(data, matrix);
+  } else {
+    applyFiltersStepwise(data, filters);
+  }
 
-  // Re-encode with the same format as the source
-  const format = metadata.format; // 'png', 'jpeg', 'webp', etc.
-
+  // Re-encode in the same format, declare sRGB and drop any source ICC profile
+  // (we already converted pixels into sRGB, so a stale profile would lie).
   await sharp(data, {
-    raw: {
-      width: info.width,
-      height: info.height,
-      channels: 4,
-    },
+    raw: { width: info.width, height: info.height, channels: 4 },
   })
+    .toColourspace('srgb')
+    .withMetadata({ icc: 'srgb' })
     .toFormat(format)
     .toFile(outputPath);
 }

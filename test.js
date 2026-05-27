@@ -4,7 +4,12 @@
  * expected values for known pixel inputs.
  */
 
-const { buildCombinedMatrix, applyMatrixToPixels, parseFilterString } = require('./matrix');
+const {
+  buildCombinedMatrix,
+  applyMatrixToPixels,
+  applyFiltersStepwise,
+  parseFilterString,
+} = require('./matrix');
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
@@ -100,12 +105,70 @@ function assert(label, got, expected) {
   }
 }
 
-// --- Integration: file round-trip ---
-async function testFileRoundtrip() {
+// --- Unit: stepwise identity filters ---
+{
+  const buf = Buffer.from([180, 90, 40, 255]);
+  const orig = [...buf];
+  applyFiltersStepwise(buf, { saturate: 1, hueRotate: 0, brightness: 1 });
+  assert('stepwise identity on opaque pixel', [...buf], orig);
+}
+
+// --- Unit: stepwise brightness(0.5) on opaque ---
+{
+  const buf = Buffer.from([200, 100, 50, 255]);
+  applyFiltersStepwise(buf, { brightness: 0.5 });
+  assert('stepwise brightness(0.5) on opaque', [...buf], [100, 50, 25, 255]);
+}
+
+// --- Unit: stepwise vs combined match for in-range, opaque pixel (single filter) ---
+{
+  const buf1 = Buffer.from([180, 90, 40, 255]);
+  const buf2 = Buffer.from([180, 90, 40, 255]);
+  applyFiltersStepwise(buf1, { saturate: 0.5 });
+  applyMatrixToPixels(buf2, buildCombinedMatrix({ saturate: 0.5 }));
+  assert('stepwise == combined for single in-range filter', [...buf1], [...buf2]);
+}
+
+// --- Unit: stepwise preserves alpha edge (transparent pixel stays transparent) ---
+{
+  const buf = Buffer.from([200, 100, 50, 0]);
+  applyFiltersStepwise(buf, { brightness: 2, saturate: 5 });
+  assert('stepwise: alpha=0 stays alpha=0', [buf[3]], [0]);
+}
+
+// --- Integration: file round-trip (fast mode == combined matrix) ---
+async function testFileRoundtripFast() {
   const tmpIn = path.join(__dirname, '_test_in.png');
   const tmpOut = path.join(__dirname, '_test_out.png');
 
-  // Create a 2x2 test image with known colors
+  await sharp({
+    create: { width: 2, height: 2, channels: 4, background: { r: 200, g: 100, b: 50, alpha: 1 } },
+  }).png().toFile(tmpIn);
+
+  const { processImage } = require('./process');
+  await processImage(tmpIn, tmpOut, { hueRotate: 135, saturate: 1.32, brightness: 0.96 }, { mode: 'fast' });
+
+  const { data } = await sharp(tmpOut).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+  const m = buildCombinedMatrix({ hueRotate: 135, saturate: 1.32, brightness: 0.96 });
+  const ref = Buffer.from([200, 100, 50, 255]);
+  applyMatrixToPixels(ref, m);
+
+  assert(
+    'fast-mode round-trip: hue-rotate(135) saturate(1.32) brightness(0.96)',
+    [data[0], data[1], data[2], data[3]],
+    [ref[0], ref[1], ref[2], ref[3]],
+  );
+
+  fs.unlinkSync(tmpIn);
+  fs.unlinkSync(tmpOut);
+}
+
+// --- Integration: file round-trip (browser/stepwise mode) ---
+async function testFileRoundtripBrowser() {
+  const tmpIn = path.join(__dirname, '_test_in_b.png');
+  const tmpOut = path.join(__dirname, '_test_out_b.png');
+
   await sharp({
     create: { width: 2, height: 2, channels: 4, background: { r: 200, g: 100, b: 50, alpha: 1 } },
   }).png().toFile(tmpIn);
@@ -115,19 +178,22 @@ async function testFileRoundtrip() {
 
   const { data } = await sharp(tmpOut).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 
-  // Manually compute expected: apply our matrix to [200,100,50,255]
-  const m = buildCombinedMatrix({ hueRotate: 135, saturate: 1.32, brightness: 0.96 });
   const ref = Buffer.from([200, 100, 50, 255]);
-  applyMatrixToPixels(ref, m);
+  applyFiltersStepwise(ref, { hueRotate: 135, saturate: 1.32, brightness: 0.96 });
 
   assert(
-    'file round-trip: hue-rotate(135) saturate(1.32) brightness(0.96)',
+    'browser-mode round-trip: hue-rotate(135) saturate(1.32) brightness(0.96)',
     [data[0], data[1], data[2], data[3]],
     [ref[0], ref[1], ref[2], ref[3]],
   );
 
   fs.unlinkSync(tmpIn);
   fs.unlinkSync(tmpOut);
+}
+
+async function testFileRoundtrip() {
+  await testFileRoundtripFast();
+  await testFileRoundtripBrowser();
 }
 
 testFileRoundtrip()

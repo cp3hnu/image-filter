@@ -50,9 +50,21 @@ $ image-filter <input...> [options]
 | `--contrast <amount>` | 对比度倍数，或百分比 | `1` |
 | `-o, --output-dir <path>` | 输出目录（保留相对路径结构），或单文件时指定输出文件路径 | 覆盖原文件 |
 | `-s, --suffix <string>` | 在扩展名前追加后缀，如 `_filtered` | — |
+| `--fast` | 使用合并矩阵（快，但与浏览器差异略大） | 关 |
 | `--dry-run` | 只打印将要执行的操作，不写文件 | — |
 
 使用 `-F` 时，不要与单独的滤镜参数混用（以 `-F` 为准）。
+
+### 渲染模式
+
+- **`browser`（默认）**：与 Chrome/Skia 行为对齐
+  - 每个滤镜单独一步，步与步之间裁切到 `[0, 1]`（模拟 8 位中间缓冲）
+  - 在**预乘 alpha**的 sRGB 上运算（W3C 规范）
+  - Sharp 管线先转 sRGB，输出去掉源 ICC 配置，避免色彩配置漂移
+- **`--fast`**：把所有滤镜乘成单个 5×4 矩阵，一次性应用
+  - 在非预乘 sRGB 上运算
+  - 对纯不透明图、单一/温和滤镜，与 `browser` 模式结果非常接近
+  - 速度更快，多次链式滤镜下与浏览器差异会变大
 
 ### 滤镜顺序
 
@@ -124,14 +136,30 @@ $ image-filter images/ -o out/ --dry-run -H 30
 $ node test.js
 ```
 
+与真实浏览器（Playwright + Chromium）对照：
+
+```bash
+$ npm install --save-dev playwright
+$ npx playwright install chromium
+$ node compare-playwright.js ./image.jpg 'invert(20%) sepia(60%) hue-rotate(90deg)'
+```
+
+脚本会同时生成：
+- `compare-pw-<图片名>.png` — 浏览器输出（基准）
+- `compare-if-browser-<图片名>.png` — image-filter 默认模式
+- `compare-if-fast-<图片名>.png` — `--fast` 合并矩阵模式
+
+并打印像素级差异统计。
+
 ## 项目结构
 
 | 文件 | 说明 |
 |------|------|
 | `index.js` | CLI 入口，参数解析与批量调度 |
-| `process.js` | 使用 Sharp 读写像素并应用矩阵 |
-| `matrix.js` | CSS 滤镜矩阵构建、字符串解析与像素变换 |
-| `test.js` | 矩阵数学与端到端像素校验 |
+| `process.js` | 使用 Sharp 读写像素，sRGB 管线 |
+| `matrix.js` | CSS 滤镜矩阵、字符串解析、合并/步进两种应用方式 |
+| `test.js` | 矩阵数学、步进、端到端像素校验 |
+| `compare-playwright.js` | 真实浏览器（Chromium）对照工具（可选） |
 
 ## 依赖
 

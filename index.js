@@ -107,6 +107,7 @@ program
   .option('--contrast <amount>', 'Contrast multiplier or % (default: 1)', parseAmount, FILTER_DEFAULTS.contrast)
   .option('-o, --output-dir <path>', 'Output directory (structure preserved), or output file for a single input')
   .option('-s, --suffix <string>', 'Append suffix before extension, e.g. "_filtered"')
+  .option('--fast', 'Fast mode: combine all filters into a single matrix (legacy; less browser-accurate)')
   .option('--dry-run', 'Print what would be done without processing')
   .action(async (inputs, opts) => {
     const entries = await collectInputs(inputs);
@@ -160,6 +161,7 @@ program
       console.log(`  ${label.padEnd(11)}: ${opts.outputDir}`);
     }
     if (opts.suffix) console.log(`  suffix     : ${opts.suffix}`);
+    console.log(`  mode       : ${opts.fast ? 'fast (combined matrix)' : 'browser (stepwise + premultiplied + sRGB)'}`);
     console.log('');
 
     let ok = 0;
@@ -183,7 +185,7 @@ program
       }
 
       try {
-        await processImage(file, outPath, filters);
+        await processImage(file, outPath, filters, { mode: opts.fast ? 'fast' : 'browser' });
         const arrow = file === outPath ? '(overwritten)' : `→  ${displayPath(outPath)}`;
         console.log(`${progress} [OK]  ${displayPath(file)}  ${arrow}`);
         ok++;

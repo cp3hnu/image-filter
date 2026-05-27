@@ -242,7 +242,7 @@ function buildCombinedMatrix(input = {}) {
 
 /**
  * Apply a 5x4 color matrix to a raw RGBA pixel buffer (Uint8Array/Buffer).
- * Modifies the buffer in-place.
+ * Modifies the buffer in-place. Operates on non-premultiplied sRGB.
  */
 function applyMatrixToPixels(buffer, matrix) {
   const len = buffer.length;
@@ -265,9 +265,85 @@ function applyMatrixToPixels(buffer, matrix) {
   return buffer;
 }
 
+/** Resolve a filter input (string / steps array / option object) into an ordered steps array. */
+function resolveSteps(input = {}) {
+  if (typeof input === 'string') return parseFilterString(input).steps;
+  if (Array.isArray(input.steps)) return input.steps;
+
+  const steps = [];
+  const add = (name, amount, def) => {
+    if (amount !== def) steps.push({ name, amount });
+  };
+  add('invert', input.invert ?? FILTER_DEFAULTS.invert, FILTER_DEFAULTS.invert);
+  add('sepia', input.sepia ?? FILTER_DEFAULTS.sepia, FILTER_DEFAULTS.sepia);
+  add('saturate', input.saturate ?? FILTER_DEFAULTS.saturate, FILTER_DEFAULTS.saturate);
+  add('hue-rotate', input.hueRotate ?? FILTER_DEFAULTS.hueRotate, FILTER_DEFAULTS.hueRotate);
+  add('brightness', input.brightness ?? FILTER_DEFAULTS.brightness, FILTER_DEFAULTS.brightness);
+  add('contrast', input.contrast ?? FILTER_DEFAULTS.contrast, FILTER_DEFAULTS.contrast);
+  return steps;
+}
+
+/**
+ * Browser-matching application: apply each filter as a separate pass with
+ * intermediate clamping, on premultiplied sRGB samples — matching the W3C
+ * Filter Effects spec and Chrome/Skia's actual behavior.
+ *
+ *  - Step-by-step instead of one combined matrix → mimics 8-bit intermediates
+ *  - Premultiplied RGBA per spec (bias terms scale by alpha)
+ *  - Float math between steps, only quantize at the end
+ *
+ * Modifies the buffer in-place.
+ */
+function applyFiltersStepwise(buffer, input) {
+  const steps = resolveSteps(input);
+  if (steps.length === 0) return buffer;
+
+  const matrices = steps.map(({ name, amount }) => matrixForStep(name, amount));
+  const len = buffer.length;
+
+  for (let i = 0; i < len; i += 4) {
+    const a0 = buffer[i + 3] / 255;
+    // Premultiply (no-op when a0 === 1)
+    let r = (buffer[i]     / 255) * a0;
+    let g = (buffer[i + 1] / 255) * a0;
+    let b = (buffer[i + 2] / 255) * a0;
+    let a = a0;
+
+    for (const m of matrices) {
+      // In premultiplied space, every additive constant (bias) must scale by alpha.
+      const nr = m[0] * r + m[1] * g + m[2] * b + m[3] * a + m[4] * a;
+      const ng = m[5] * r + m[6] * g + m[7] * b + m[8] * a + m[9] * a;
+      const nb = m[10] * r + m[11] * g + m[12] * b + m[13] * a + m[14] * a;
+      const na = m[15] * r + m[16] * g + m[17] * b + m[18] * a + m[19];
+
+      // Browser-like intermediate clamp: premultiplied RGB ∈ [0, alpha].
+      a = na < 0 ? 0 : na > 1 ? 1 : na;
+      r = nr < 0 ? 0 : nr > a ? a : nr;
+      g = ng < 0 ? 0 : ng > a ? a : ng;
+      b = nb < 0 ? 0 : nb > a ? a : nb;
+    }
+
+    // Unpremultiply for storage in non-premultiplied 8-bit RGBA.
+    let outR = 0, outG = 0, outB = 0;
+    if (a > 0) {
+      outR = r / a;
+      outG = g / a;
+      outB = b / a;
+    }
+
+    buffer[i]     = Math.round((outR < 0 ? 0 : outR > 1 ? 1 : outR) * 255);
+    buffer[i + 1] = Math.round((outG < 0 ? 0 : outG > 1 ? 1 : outG) * 255);
+    buffer[i + 2] = Math.round((outB < 0 ? 0 : outB > 1 ? 1 : outB) * 255);
+    buffer[i + 3] = Math.round(a * 255);
+  }
+  return buffer;
+}
+
 module.exports = {
   FILTER_DEFAULTS,
   buildCombinedMatrix,
   parseFilterString,
+  resolveSteps,
   applyMatrixToPixels,
+  applyFiltersStepwise,
 };
