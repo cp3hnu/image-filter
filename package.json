@@ -1,7 +1,7 @@
 {
   "name": "image-filter",
   "version": "1.0.0",
-  "description": "对图片批量应用与 CSS 一致的 `filter` 滤镜，输出格式与源文件相同。",
+  "description": "Apply the same `filter` effect as CSS to a batch of images, and output the files in the same format as the original ones.",
   "main": "process.js",
   "bin": {
     "image-filter": "./index.js"

@@ -1,118 +1,119 @@
 # image-filter
 
-对图片批量应用与 CSS 一致的 `filter` 滤镜，输出格式与源文件相同。
+English | [简体中文](./README.zh-CN.md)
 
-支持的滤镜：`invert`、`sepia`、`saturate`、`hue-rotate`、`brightness`、`contrast`。
+Apply CSS-compatible `filter` effects to images in batch. Output format matches the source file.
 
-实现基于 [W3C Filter Effects](https://www.w3.org/TR/filter-effects/#feColorMatrixElement) 的 5×4 颜色矩阵，在 sRGB 空间运算，行为与浏览器 CSS 滤镜对齐。
+Supported filters: `invert`, `sepia`, `saturate`, `hue-rotate`, `brightness`, `contrast`.
 
-## 安装
+Implementation follows the [W3C Filter Effects](https://www.w3.org/TR/filter-effects/#feColorMatrixElement) 5×4 color matrix in sRGB space, aligned with browser CSS filter behavior.
+
+## Install
 
 ```bash
 $ npm install -g image-filter
 ```
 
-或直接运行（无需全局安装）：
+Or run without a global install:
 
 ```bash
 $ npx image-filter photo.png -F 'hue-rotate(90deg)'
 ```
 
-本地开发：
+Local development:
 
 ```bash
 $ npm install
 $ npm link
 ```
 
-## 用法
+## Usage
 
 ```bash
 $ image-filter <input...> [options]
 ```
 
-`<input...>` 可以是：
+`<input...>` can be:
 
-- 单个或多个图片文件
-- 目录（递归处理其中支持的图片）
-- Glob 模式（如 `images/**/*.png`）
+- One or more image files
+- A directory (recursively processes supported images inside)
+- Glob patterns (e.g. `images/**/*.png`)
 
-### 选项
+### Options
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-F, --filter <css>` | 完整 CSS `filter` 字符串，顺序与字符串一致 | — |
-| `-o, --output-dir <path>` | 输出目录（保留相对路径结构），或单文件时指定输出文件路径 | 覆盖原文件 |
-| `-s, --suffix <string>` | 在扩展名前追加后缀，如 `_filtered` | — |
-| `--dry-run` | 只打印将要执行的操作，不写文件 | — |
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-F, --filter <css>` | Full CSS `filter` string; filters apply in string order | — |
+| `-o, --output-dir <path>` | Output directory (preserves relative paths), or output file path for a single input | Overwrite source |
+| `-s, --suffix <string>` | Append suffix before extension, e.g. `_filtered` | — |
+| `--dry-run` | Print planned operations without writing files | — |
 
-### 滤镜顺序
+### Filter order
 
-**顺序会影响结果**，与浏览器 `filter` 属性相同。
+**Order matters**, same as the browser `filter` property.
 
-- **`-F` 字符串**：按从左到右依次应用，例如  
+- **`-F` string**: Applied left to right. For example,  
   `hue-rotate(346deg) saturate(1142%) brightness(92%)`  
-  与  
-  `saturate(1142%) hue-rotate(346deg) brightness(92%)`  
-  结果不同。
+  differs from  
+  `saturate(1142%) hue-rotate(346deg) brightness(92%)`.
 
-### 支持的格式
+### Supported formats
 
-`.png`、`.jpg`、`.jpeg`、`.webp`、`.tiff`、`.tif`、`.avif`
+`.png`, `.jpg`, `.jpeg`, `.webp`, `.tiff`, `.tif`, `.avif`
 
-## 示例
+## Examples
 
-完整 CSS 滤镜链（Instagram 风格等）：
+Full CSS filter chain (Instagram-style presets):
 
 ```bash
 $ image-filter photo.png -F 'invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)'
 ```
 
-单张图片，色相旋转 90°，饱和度 150%，亮度 80%：
+Single image: 90° hue rotate, 150% saturation, 80% brightness:
 
 ```bash
 $ image-filter photo.jpg -F 'hue-rotate(90deg) saturate(150%) brightness(80%)'
 ```
 
-高饱和 + 色相 + 亮度：
+High saturation + hue + brightness:
 
 ```bash
 $ image-filter photo.png -F 'saturate(1142%) hue-rotate(346deg) brightness(92%)'
 ```
 
-输出到新目录，保留子目录结构：
+Output to a new directory, preserving subdirectory structure:
 
 ```bash
 $ image-filter ./assets -o ./out -F 'hue-rotate(45deg)'
 ```
 
-使用后缀，不覆盖原图：
+Use a suffix instead of overwriting originals:
 
 ```bash
 $ image-filter img/*.png -s _filtered -F 'hue-rotate(180deg)'
 ```
 
-单文件指定输出路径：
+Single file with explicit output path:
 
 ```bash
 $ image-filter input.png -o result.png -F 'saturate(120%) brightness(50%)'
 ```
 
-预览计划（不写入）：
+Preview plan (no writes):
 
 ```bash
 $ image-filter images/ -o out/ --dry-run -F 'hue-rotate(30deg)'
 ```
 
-## 测试
+## Testing
 
-矩阵运算正确性测试：
+Matrix correctness:
 
 ```bash
 $ node test.js
 ```
 
-与真实浏览器（Playwright + Chromium）对照：
+Compare against a real browser (Playwright + Chromium):
 
 ```bash
 $ npm install --save-dev playwright
@@ -120,27 +121,28 @@ $ npx playwright install chromium
 $ node compare-playwright.js ./image.jpg 'invert(20%) sepia(60%) hue-rotate(90deg)'
 ```
 
-脚本会同时生成：
-- `compare-pw-<图片名>.png` — 浏览器输出（基准）
-- `compare-if-browser-<图片名>.png` — image-filter 输出
+The script produces:
 
-并打印像素级差异统计。
+- `compare-pw-<name>.png` — browser output (reference)
+- `compare-if-browser-<name>.png` — image-filter output
 
-## 项目结构
+It also prints per-pixel difference statistics.
 
-| 文件 | 说明 |
-|------|------|
-| `index.js` | CLI 入口，参数解析与批量调度 |
-| `process.js` | 使用 Sharp 读写像素（sRGB + 预乘 alpha + 步进式 filter） |
-| `matrix.js` | CSS 滤镜矩阵与字符串解析、步进式像素变换 |
-| `test.js` | 矩阵数学、步进、端到端像素校验 |
-| `compare-playwright.js` | 真实浏览器（Chromium）对照工具（可选） |
+## Project structure
 
-## 依赖
+| File | Description |
+|------|-------------|
+| `index.js` | CLI entry, argument parsing, batch scheduling |
+| `process.js` | Sharp read/write (sRGB + premultiplied alpha + stepped filters) |
+| `matrix.js` | CSS filter matrices, string parsing, per-pixel transforms |
+| `test.js` | Matrix math, stepping, end-to-end pixel checks |
+| `compare-playwright.js` | Chromium comparison tool (optional) |
 
-- [sharp](https://sharp.pixelplumbing.com/) — 图片解码/编码
+## Dependencies
+
+- [sharp](https://sharp.pixelplumbing.com/) — image decode/encode
 - [commander](https://github.com/tj/commander.js) — CLI
-- [glob](https://github.com/isaacs/node-glob) — 路径匹配
+- [glob](https://github.com/isaacs/node-glob) — path matching
 
 ## License
 
