@@ -15,7 +15,7 @@ const { pathToFileURL } = require('url');
 const crypto = require('crypto');
 const { chromium } = require('playwright');
 const sharp = require('sharp');
-const { processImage } = require('./process');
+const { processImage } = require('../process');
 
 const ROOT = __dirname;
 

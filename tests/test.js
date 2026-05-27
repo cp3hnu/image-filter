@@ -9,7 +9,7 @@ const {
   applyMatrixToPixels,
   applyFiltersStepwise,
   parseFilterString,
-} = require('./matrix');
+} = require('../matrix');
 const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
@@ -145,7 +145,7 @@ async function testFileRoundtrip() {
     create: { width: 2, height: 2, channels: 4, background: { r: 200, g: 100, b: 50, alpha: 1 } },
   }).png().toFile(tmpIn);
 
-  const { processImage } = require('./process');
+  const { processImage } = require('../process');
   await processImage(tmpIn, tmpOut, { hueRotate: 135, saturate: 1.32, brightness: 0.96 });
 
   const { data } = await sharp(tmpOut).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

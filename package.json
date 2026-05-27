@@ -1,7 +1,7 @@
 {
   "name": "image-filter",
   "version": "1.0.0",
-  "description": "Apply the same `filter` effect as CSS to a batch of images, and output the files in the same format as the original ones.",
+  "description": "Apply CSS-compatible `filter` effects to images in batch. ",
   "main": "process.js",
   "bin": {
     "image-filter": "./index.js"
