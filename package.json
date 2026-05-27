@@ -1,10 +1,10 @@
 {
-  "name": "image-filter",
+  "name": "images-filter",
   "version": "1.0.0",
   "description": "Apply CSS-compatible `filter` effects to images in batch. ",
   "main": "process.js",
   "bin": {
-    "image-filter": "./index.js"
+    "images-filter": "./index.js"
   },
   "scripts": {
     "dev": "node index.js",

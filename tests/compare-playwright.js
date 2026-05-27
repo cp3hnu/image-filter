@@ -3,7 +3,7 @@
 
 /**
  * Ground-truth comparison: render CSS filter in a real Chromium via Playwright,
- * then compare against image-filter output.
+ * then compare against images-filter output.
  *
  * Usage:
  *   node compare-playwright.js <image-path> "<filter-string>"
@@ -133,12 +133,12 @@ async function main() {
   await renderInBrowser(FILTER, pwOut);
   console.log(`   → ${path.basename(pwOut)}  sha=${sha16(pwOut)}\n`);
 
-  console.log('2) image-filter 输出…');
+  console.log('2) images-filter 输出…');
   await processImage(INPUT, ifBrowserOut, FILTER);
   console.log(`   → ${path.basename(ifBrowserOut)}  sha=${sha16(ifBrowserOut)}\n`);
 
   console.log('=== 与 Playwright 浏览器的对比 ===\n');
-  console.log('-- image-filter vs browser --');
+  console.log('-- images-filter vs browser --');
   console.log(' ', await stats(pwOut, ifBrowserOut));
 }
 

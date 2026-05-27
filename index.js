@@ -79,7 +79,7 @@ function displayPath(filePath) {
 }
 
 program
-  .name('image-filter')
+  .name('images-filter')
   .description('Apply CSS filter() effects to images (invert, sepia, saturate, hue-rotate, brightness, contrast)')
   .argument('<input...>', 'Image file(s), director(ies), or glob patterns')
   .requiredOption(
@@ -105,7 +105,7 @@ program
     const parsed = parseFilterString(opts.filter);
     const filters = { steps: parsed.steps };
 
-    console.log(`\nimage-filter  ·  ${entries.length} file(s)`);
+    console.log(`\nimages-filter  ·  ${entries.length} file(s)`);
     console.log(`  filter     : ${opts.filter}`);
     if (opts.outputDir) {
       const label = isExplicitOutputFile(opts.outputDir, entries.length) ? 'output' : 'output-dir';

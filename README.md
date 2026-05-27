@@ -1,4 +1,4 @@
-# image-filter
+# images-filter
 
 English | [简体中文](./README.zh-CN.md)
 
@@ -11,13 +11,13 @@ Implementation follows the [W3C Filter Effects](https://www.w3.org/TR/filter-eff
 ## Install
 
 ```bash
-$ npm install -g image-filter
+$ npm install -g images-filter
 ```
 
 Or run without a global install:
 
 ```bash
-$ npx image-filter photo.png -F 'hue-rotate(90deg)'
+$ npx images-filter photo.png -F 'hue-rotate(90deg)'
 ```
 
 Local development:
@@ -30,7 +30,7 @@ $ npm link
 ## Usage
 
 ```bash
-$ image-filter <input...> [options]
+$ images-filter <input...> [options]
 ```
 
 `<input...>` can be:
@@ -66,43 +66,43 @@ $ image-filter <input...> [options]
 Full CSS filter chain (Instagram-style presets):
 
 ```bash
-$ image-filter photo.png -F 'invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)'
+$ images-filter photo.png -F 'invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)'
 ```
 
 Single image: 90° hue rotate, 150% saturation, 80% brightness:
 
 ```bash
-$ image-filter photo.jpg -F 'hue-rotate(90deg) saturate(150%) brightness(80%)'
+$ images-filter photo.jpg -F 'hue-rotate(90deg) saturate(150%) brightness(80%)'
 ```
 
 High saturation + hue + brightness:
 
 ```bash
-$ image-filter photo.png -F 'saturate(1142%) hue-rotate(346deg) brightness(92%)'
+$ images-filter photo.png -F 'saturate(1142%) hue-rotate(346deg) brightness(92%)'
 ```
 
 Output to a new directory, preserving subdirectory structure:
 
 ```bash
-$ image-filter ./assets -o ./out -F 'hue-rotate(45deg)'
+$ images-filter ./assets -o ./out -F 'hue-rotate(45deg)'
 ```
 
 Use a suffix instead of overwriting originals:
 
 ```bash
-$ image-filter img/*.png -s _filtered -F 'hue-rotate(180deg)'
+$ images-filter img/*.png -s _filtered -F 'hue-rotate(180deg)'
 ```
 
 Single file with explicit output path:
 
 ```bash
-$ image-filter input.png -o result.png -F 'saturate(120%) brightness(50%)'
+$ images-filter input.png -o result.png -F 'saturate(120%) brightness(50%)'
 ```
 
 Preview plan (no writes):
 
 ```bash
-$ image-filter images/ -o out/ --dry-run -F 'hue-rotate(30deg)'
+$ images-filter images/ -o out/ --dry-run -F 'hue-rotate(30deg)'
 ```
 
 ## Testing
@@ -124,7 +124,7 @@ $ node compare-playwright.js ./image.jpg 'invert(20%) sepia(60%) hue-rotate(90de
 The script produces:
 
 - `compare-pw-<name>.png` — browser output (reference)
-- `compare-if-browser-<name>.png` — image-filter output
+- `compare-if-browser-<name>.png` — images-filter output
 
 It also prints per-pixel difference statistics.
 

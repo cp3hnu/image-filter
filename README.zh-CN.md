@@ -1,4 +1,4 @@
-# image-filter
+# images-filter
 
 [English](./README.md) | 简体中文
 
@@ -11,13 +11,13 @@
 ## 安装
 
 ```bash
-$ npm install -g image-filter
+$ npm install -g images-filter
 ```
 
 或直接运行（无需全局安装）：
 
 ```bash
-$ npx image-filter photo.png -F 'hue-rotate(90deg)'
+$ npx images-filter photo.png -F 'hue-rotate(90deg)'
 ```
 
 本地开发：
@@ -30,7 +30,7 @@ $ npm link
 ## 用法
 
 ```bash
-$ image-filter <input...> [options]
+$ images-filter <input...> [options]
 ```
 
 `<input...>` 可以是：
@@ -67,43 +67,43 @@ $ image-filter <input...> [options]
 完整 CSS 滤镜链（Instagram 风格等）：
 
 ```bash
-$ image-filter photo.png -F 'invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)'
+$ images-filter photo.png -F 'invert(39%) sepia(74%) saturate(1142%) hue-rotate(346deg) brightness(92%) contrast(106%)'
 ```
 
 单张图片，色相旋转 90°，饱和度 150%，亮度 80%：
 
 ```bash
-$ image-filter photo.jpg -F 'hue-rotate(90deg) saturate(150%) brightness(80%)'
+$ images-filter photo.jpg -F 'hue-rotate(90deg) saturate(150%) brightness(80%)'
 ```
 
 高饱和 + 色相 + 亮度：
 
 ```bash
-$ image-filter photo.png -F 'saturate(1142%) hue-rotate(346deg) brightness(92%)'
+$ images-filter photo.png -F 'saturate(1142%) hue-rotate(346deg) brightness(92%)'
 ```
 
 输出到新目录，保留子目录结构：
 
 ```bash
-$ image-filter ./assets -o ./out -F 'hue-rotate(45deg)'
+$ images-filter ./assets -o ./out -F 'hue-rotate(45deg)'
 ```
 
 使用后缀，不覆盖原图：
 
 ```bash
-$ image-filter img/*.png -s _filtered -F 'hue-rotate(180deg)'
+$ images-filter img/*.png -s _filtered -F 'hue-rotate(180deg)'
 ```
 
 单文件指定输出路径：
 
 ```bash
-$ image-filter input.png -o result.png -F 'saturate(120%) brightness(50%)'
+$ images-filter input.png -o result.png -F 'saturate(120%) brightness(50%)'
 ```
 
 预览计划（不写入）：
 
 ```bash
-$ image-filter images/ -o out/ --dry-run -F 'hue-rotate(30deg)'
+$ images-filter images/ -o out/ --dry-run -F 'hue-rotate(30deg)'
 ```
 
 ## 测试
@@ -125,7 +125,7 @@ $ node compare-playwright.js ./image.jpg 'invert(20%) sepia(60%) hue-rotate(90de
 脚本会同时生成：
 
 - `compare-pw-<图片名>.png` — 浏览器输出（基准）
-- `compare-if-browser-<图片名>.png` — image-filter 输出
+- `compare-if-browser-<图片名>.png` — images-filter 输出
 
 并打印像素级差异统计。
 
