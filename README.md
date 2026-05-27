@@ -9,15 +9,20 @@
 ## 安装
 
 ```bash
-$ npm install
+$ npm install -g image-filter
 ```
 
-全局使用（可选）：
+或直接运行（无需全局安装）：
 
 ```bash
+$ npx image-filter photo.png -H 90
+```
+
+本地开发：
+
+```bash
+$ npm install
 $ npm link
-# 或
-$ npm install -g .
 ```
 
 ## 用法

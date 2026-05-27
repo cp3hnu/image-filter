@@ -1,21 +1,48 @@
 {
   "name": "image-filter",
   "version": "1.0.0",
-  "description": "Apply CSS-spec hue-rotate/saturate/brightness filters to images",
-  "main": "index.js",
+  "description": "对图片批量应用与 CSS 一致的 `filter` 滤镜，输出格式与源文件相同。",
+  "main": "process.js",
+  "bin": {
+    "image-filter": "./index.js"
+  },
   "scripts": {
     "dev": "node index.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "prepublishOnly": "npm test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "image",
+    "filter",
+    "css",
+    "css-filter",
+    "sharp",
+    "cli",
+    "image-processing"
+  ],
+  "author": "cp3hnu <cp3hnu@gmail.com> (https://github.com/cp3hnu)",
+  "license": "MIT",
   "dependencies": {
     "commander": "^14.0.3",
     "glob": "^13.0.6",
     "sharp": "^0.34.5"
   },
-  "bin": {
-    "image-filter": "./index.js"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cp3hnu/image-filter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cp3hnu/image-filter/issues"
+  },
+  "homepage": "https://github.com/cp3hnu/image-filter#readme",
+  "files": [
+    "index.js",
+    "process.js",
+    "matrix.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": "^18.17.0 || ^20.3.0 || >=21.0.0"
   }
 }
